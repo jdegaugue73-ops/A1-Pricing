@@ -39,79 +39,153 @@ def calculate_variable(row):
 def main():
     st.set_page_config(page_title="Calculateur de Rémunération Variable", page_icon="💰", layout="wide")
 
-    st.title("💰 Calculateur de Rémunération Variable (Équipe de 9)")
-    st.markdown("""
-    Cet outil permet de calculer la part variable du salaire pour vos collaborateurs.
+    st.title("💰 Calculateur de Rémunération Variable et Suivi des Tâches")
 
-    **Règles de calcul (Base 1000€) :**
-    - **Conversion** (Objectif 11%) : Poids **50%** (500€)
-    - **Ventes** (Objectif 90%) : Poids **30%** (300€)
-    - **Marges Négatives** (Objectif ≤ 20%) : Poids **20%** (200€)
+    tab1, tab2 = st.tabs(["💰 Calculateur Variable", "📋 Suivi des Tâches Non Comptabilisées"])
 
-    *Le total est déplafonné mais **limité à 1300€ maximum**.*
-    """)
+    with tab1:
+        st.markdown("""
+        Cet outil permet de calculer la part variable du salaire pour vos collaborateurs.
 
-    # Initialisation des données pour 9 personnes
-    if "data" not in st.session_state:
-        st.session_state.data = pd.DataFrame({
-            "Nom du collaborateur": [f"Collaborateur {i+1}" for i in range(9)],
-            "Ventes (%)": [90.0, 70.0, 80.0, 85.0, 95.0, 100.0, 110.0, 90.0, 85.0],
-            "Conversion (%)": [11.0, 8.0, 13.0, 10.0, 12.0, 13.0, 15.0, 11.0, 10.0],
-            "Marges Négatives (%)": [20.0, 25.0, 20.0, 5.0, 30.0, 10.0, 0.0, 15.0, 10.0]
-        })
+        **Règles de calcul (Base 1000€) :**
+        - **Conversion** (Objectif 11%) : Poids **50%** (500€)
+        - **Ventes** (Objectif 90%) : Poids **30%** (300€)
+        - **Marges Négatives** (Objectif ≤ 20%) : Poids **20%** (200€)
 
-    st.subheader("Saisie des performances")
-    st.info("Modifiez directement les valeurs dans le tableau ci-dessous. Les calculs se mettront à jour automatiquement.")
+        *Le total est déplafonné mais **limité à 1300€ maximum**.*
+        """)
 
-    # Tableau éditable
-    edited_df = st.data_editor(
-        st.session_state.data,
-        num_rows="fixed",
-        width="stretch",
-        hide_index=True,
-        column_config={
-            "Nom du collaborateur": st.column_config.TextColumn("Nom"),
-            "Ventes (%)": st.column_config.NumberColumn("Ventes (%)", min_value=0.0, format="%.1f %%"),
-            "Conversion (%)": st.column_config.NumberColumn("Conversion (%)", min_value=0.0, format="%.1f %%"),
-            "Marges Négatives (%)": st.column_config.NumberColumn("Marges Négatives (%)", min_value=0.0, format="%.1f %%"),
-        }
-    )
+        # Initialisation des données pour 9 personnes
+        if "data" not in st.session_state:
+            st.session_state.data = pd.DataFrame({
+                "Nom du collaborateur": [f"Collaborateur {i+1}" for i in range(9)],
+                "Ventes (%)": [90.0, 70.0, 80.0, 85.0, 95.0, 100.0, 110.0, 90.0, 85.0],
+                "Conversion (%)": [11.0, 8.0, 13.0, 10.0, 12.0, 13.0, 15.0, 11.0, 10.0],
+                "Marges Négatives (%)": [20.0, 25.0, 20.0, 5.0, 30.0, 10.0, 0.0, 15.0, 10.0]
+            })
 
-    # Sauvegarde des modifications
-    st.session_state.data = edited_df
+        st.subheader("Saisie des performances")
+        st.info("Modifiez directement les valeurs dans le tableau ci-dessous. Les calculs se mettront à jour automatiquement.")
 
-    st.subheader("Résultats : Montants des Variables")
-    
-    # Application du calcul
-    results_df = edited_df.copy()
-    results_df[["Bonus Ventes (€)", "Bonus Conv. (€)", "Bonus Marges (€)", "Total Brut (€)", "Total à Payer (€)"]] = results_df.apply(calculate_variable, axis=1)
-    
-    # Formatage des colonnes de résultats
-    st.dataframe(
-        results_df,
-        width="stretch",
-        hide_index=True,
-        column_config={
-            "Nom du collaborateur": st.column_config.TextColumn("Nom"),
-            "Ventes (%)": st.column_config.NumberColumn(format="%.1f %%"),
-            "Conversion (%)": st.column_config.NumberColumn(format="%.1f %%"),
-            "Marges Négatives (%)": st.column_config.NumberColumn(format="%.1f %%"),
-            "Bonus Ventes (€)": st.column_config.NumberColumn("Bonus Ventes", format="%d €"),
-            "Bonus Conv. (€)": st.column_config.NumberColumn("Bonus Conv.", format="%d €"),
-            "Bonus Marges (€)": st.column_config.NumberColumn("Bonus Marges", format="%d €"),
-            "Total Brut (€)": st.column_config.NumberColumn("Total Brut", format="%d €"),
-            "Total à Payer (€)": st.column_config.NumberColumn("Total à Payer (Max 1300€)", format="%d €", width="medium"),
-        }
-    )
-    
-    # Export CSV
-    csv = results_df.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="📥 Télécharger les résultats (CSV)",
-        data=csv,
-        file_name='calcul_variables_equipe.csv',
-        mime='text/csv',
-    )
+        # Tableau éditable
+        edited_df = st.data_editor(
+            st.session_state.data,
+            num_rows="fixed",
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Nom du collaborateur": st.column_config.TextColumn("Nom"),
+                "Ventes (%)": st.column_config.NumberColumn("Ventes (%)", min_value=0.0, format="%.1f %%"),
+                "Conversion (%)": st.column_config.NumberColumn("Conversion (%)", min_value=0.0, format="%.1f %%"),
+                "Marges Négatives (%)": st.column_config.NumberColumn("Marges Négatives (%)", min_value=0.0, format="%.1f %%"),
+            }
+        )
+
+        # Sauvegarde des modifications
+        st.session_state.data = edited_df
+
+        st.subheader("Résultats : Montants des Variables")
+
+        # Application du calcul
+        results_df = edited_df.copy()
+        results_df[["Bonus Ventes (€)", "Bonus Conv. (€)", "Bonus Marges (€)", "Total Brut (€)", "Total à Payer (€)"]] = results_df.apply(calculate_variable, axis=1)
+
+        # Formatage des colonnes de résultats
+        st.dataframe(
+            results_df,
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Nom du collaborateur": st.column_config.TextColumn("Nom"),
+                "Ventes (%)": st.column_config.NumberColumn(format="%.1f %%"),
+                "Conversion (%)": st.column_config.NumberColumn(format="%.1f %%"),
+                "Marges Négatives (%)": st.column_config.NumberColumn(format="%.1f %%"),
+                "Bonus Ventes (€)": st.column_config.NumberColumn("Bonus Ventes", format="%d €"),
+                "Bonus Conv. (€)": st.column_config.NumberColumn("Bonus Conv.", format="%d €"),
+                "Bonus Marges (€)": st.column_config.NumberColumn("Bonus Marges", format="%d €"),
+                "Total Brut (€)": st.column_config.NumberColumn("Total Brut", format="%d €"),
+                "Total à Payer (€)": st.column_config.NumberColumn("Total à Payer (Max 1300€)", format="%d €", width="medium"),
+            }
+        )
+
+        # Export CSV
+        csv = results_df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Télécharger les résultats (CSV)",
+            data=csv,
+            file_name='calcul_variables_equipe.csv',
+            mime='text/csv',
+        )
+
+    with tab2:
+        st.markdown("""
+        Cet espace permet de recenser toutes les tâches effectuées qui ne sont pas actuellement comptabilisées
+        dans les objectifs classiques.
+        """)
+
+        # Initialisation des données pour les tâches
+        if "tasks_data" not in st.session_state:
+            st.session_state.tasks_data = pd.DataFrame(columns=[
+                "Date", "Collaborateur", "Type de tâche", "Description", "Temps passé (heures)"
+            ])
+            # Ajouter une ligne vide par défaut
+            st.session_state.tasks_data.loc[0] = [pd.Timestamp.today().date(), "Collaborateur 1", "Analyse ad-hoc", "Exemple de tâche", 1.0]
+
+        st.subheader("📝 Déclaration des tâches")
+        st.info("Ajoutez, modifiez ou supprimez vos tâches non comptabilisées dans ce tableau.")
+
+        # Tableau éditable pour les tâches
+        edited_tasks_df = st.data_editor(
+            st.session_state.tasks_data,
+            num_rows="dynamic",
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Date": st.column_config.DateColumn("Date", format="DD/MM/YYYY", required=True),
+                "Collaborateur": st.column_config.SelectboxColumn(
+                    "Collaborateur",
+                    options=[f"Collaborateur {i+1}" for i in range(9)],
+                    required=True
+                ),
+                "Type de tâche": st.column_config.SelectboxColumn(
+                    "Type de tâche",
+                    options=["Analyse ad-hoc", "Support", "Veille concurrentielle", "Formation", "Réunion projet interne", "Autre"],
+                    required=True
+                ),
+                "Description": st.column_config.TextColumn("Description", required=True),
+                "Temps passé (heures)": st.column_config.NumberColumn("Temps passé (heures)", min_value=0.0, format="%.1f", required=True)
+            }
+        )
+
+        # Sauvegarde des modifications
+        st.session_state.tasks_data = edited_tasks_df
+
+        st.subheader("📊 Analyses")
+
+        if not edited_tasks_df.empty:
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.markdown("**Temps passé par type de tâche**")
+                tasks_by_type = edited_tasks_df.groupby("Type de tâche")["Temps passé (heures)"].sum()
+                st.bar_chart(tasks_by_type)
+
+            with col2:
+                st.markdown("**Temps passé par collaborateur**")
+                tasks_by_collab = edited_tasks_df.groupby("Collaborateur")["Temps passé (heures)"].sum()
+                st.bar_chart(tasks_by_collab)
+        else:
+            st.write("Aucune donnée à analyser pour le moment.")
+
+        # Export CSV des tâches
+        if not edited_tasks_df.empty:
+            csv_tasks = edited_tasks_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Télécharger le suivi des tâches (CSV)",
+                data=csv_tasks,
+                file_name='suivi_taches_non_comptabilisees.csv',
+                mime='text/csv',
+            )
 
 if __name__ == "__main__":
     main()
