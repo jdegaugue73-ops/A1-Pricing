@@ -1,0 +1,11 @@
+Jour,Période,out PF 2P,NOP,pricing,PF
+Lundi,Matin,Pierre V,Benoit,Pierre D,Quentin
+Lundi,Après-midi,Pierre D,Quentin,Pierre V,Benoit
+Mardi,Matin,Pierre V,Quentin,Benoit,Pierre D
+Mardi,Après-midi,Pierre D,Benoit,Quentin,Pierre V
+Mercredi,Matin,Pierre D,Quentin,Pierre V,Benoit
+Mercredi,Après-midi,Pierre V,Benoit,Pierre D,Quentin
+Jeudi,Matin,Pierre D,Benoit,Quentin,Pierre V
+Jeudi,Après-midi,Pierre V,Quentin,Benoit,Pierre D
+Vendredi,Matin,Pierre V,Benoit,Pierre D,Quentin
+Vendredi,Après-midi,Pierre D,Quentin,Pierre V,Benoit
