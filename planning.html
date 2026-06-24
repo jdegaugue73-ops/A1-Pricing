@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planning Hebdomadaire de l'équipe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            color: #555;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        td[contenteditable="true"] {
+            cursor: pointer;
+        }
+        td[contenteditable="true"]:hover {
+            background-color: #eaf6ea;
+            outline: 1px solid #4CAF50;
+        }
+        .instruction {
+            background-color: #e7f3fe;
+            border-left: 6px solid #2196F3;
+            margin-bottom: 15px;
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📅 Planning Hebdomadaire de l'équipe</h1>
+
+    <div class="instruction">
+        <p><strong>Instructions :</strong> Ce tableau est modifiable. Vous pouvez cliquer sur n'importe quel nom pour le changer (par exemple pour remplacer par Benoit, Quentin, Pierre D ou Pierre V).</p>
+        <p>Pour enregistrer les modifications, vous pouvez faire <code>Ctrl + S</code> (ou <code>Cmd + S</code> sur Mac) et écraser le fichier actuel.</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Jour</th>
+                <th>Période</th>
+                <th>out PF 2P</th>
+                <th>NOP</th>
+                <th>pricing</th>
+                <th>PF</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Lundi</td>
+                <td>Matin</td>
+                <td contenteditable="true">Pierre V</td>
+                <td contenteditable="true">Benoit</td>
+                <td contenteditable="true">Pierre D</td>
+                <td contenteditable="true">Quentin</td>
+            </tr>
+            <tr>
+                <td>Lundi</td>
+                <td>Après-midi</td>
+                <td contenteditable="true">Pierre D</td>
+                <td contenteditable="true">Quentin</td>
+                <td contenteditable="true">Pierre V</td>
+                <td contenteditable="true">Benoit</td>
+            </tr>
+            <tr>
+                <td>Mardi</td>
+                <td>Matin</td>
+                <td contenteditable="true">Pierre V</td>
+                <td contenteditable="true">Quentin</td>
+                <td contenteditable="true">Benoit</td>
+                <td contenteditable="true">Pierre D</td>
+            </tr>
+            <tr>
+                <td>Mardi</td>
+                <td>Après-midi</td>
+                <td contenteditable="true">Pierre D</td>
+                <td contenteditable="true">Benoit</td>
+                <td contenteditable="true">Quentin</td>
+                <td contenteditable="true">Pierre V</td>
+            </tr>
+            <tr>
+                <td>Mercredi</td>
+                <td>Matin</td>
+                <td contenteditable="true">Pierre D</td>
+                <td contenteditable="true">Quentin</td>
+                <td contenteditable="true">Pierre V</td>
+                <td contenteditable="true">Benoit</td>
+            </tr>
+            <tr>
+                <td>Mercredi</td>
+                <td>Après-midi</td>
+                <td contenteditable="true">Pierre V</td>
+                <td contenteditable="true">Benoit</td>
+                <td contenteditable="true">Pierre D</td>
+                <td contenteditable="true">Quentin</td>
+            </tr>
+            <tr>
+                <td>Jeudi</td>
+                <td>Matin</td>
+                <td contenteditable="true">Pierre D</td>
+                <td contenteditable="true">Benoit</td>
+                <td contenteditable="true">Quentin</td>
+                <td contenteditable="true">Pierre V</td>
+            </tr>
+            <tr>
+                <td>Jeudi</td>
+                <td>Après-midi</td>
+                <td contenteditable="true">Pierre V</td>
+                <td contenteditable="true">Quentin</td>
+                <td contenteditable="true">Benoit</td>
+                <td contenteditable="true">Pierre D</td>
+            </tr>
+            <tr>
+                <td>Vendredi</td>
+                <td>Matin</td>
+                <td contenteditable="true">Pierre V</td>
+                <td contenteditable="true">Benoit</td>
+                <td contenteditable="true">Pierre D</td>
+                <td contenteditable="true">Quentin</td>
+            </tr>
+            <tr>
+                <td>Vendredi</td>
+                <td>Après-midi</td>
+                <td contenteditable="true">Pierre D</td>
+                <td contenteditable="true">Quentin</td>
+                <td contenteditable="true">Pierre V</td>
+                <td contenteditable="true">Benoit</td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>

@@ -41,7 +41,7 @@ def main():
 
     st.title("💰 Calculateur de Rémunération Variable et Suivi des Tâches")
 
-    tab1, tab2 = st.tabs(["💰 Calculateur Variable", "📋 Suivi des Tâches Non Comptabilisées"])
+    tab1, tab2, tab3 = st.tabs(["💰 Calculateur Variable", "📋 Suivi des Tâches Non Comptabilisées", "📅 Planning de l'équipe"])
 
     with tab1:
         st.markdown("""
@@ -184,6 +184,58 @@ def main():
                 label="📥 Télécharger le suivi des tâches (CSV)",
                 data=csv_tasks,
                 file_name='suivi_taches_non_comptabilisees.csv',
+                mime='text/csv',
+            )
+
+    with tab3:
+        st.markdown("""
+        Cet espace permet de gérer le planning hebdomadaire de l'équipe (Benoit, Quentin, Pierre D, Pierre V).
+        Modifiez les affectations directement dans le tableau ci-dessous.
+        """)
+
+        # Initialisation des données pour le planning
+        if "planning_data" not in st.session_state:
+            st.session_state.planning_data = pd.DataFrame([
+                ["Lundi", "Matin", "Pierre V", "Benoit", "Pierre D", "Quentin"],
+                ["Lundi", "Après-midi", "Pierre D", "Quentin", "Pierre V", "Benoit"],
+                ["Mardi", "Matin", "Pierre V", "Quentin", "Benoit", "Pierre D"],
+                ["Mardi", "Après-midi", "Pierre D", "Benoit", "Quentin", "Pierre V"],
+                ["Mercredi", "Matin", "Pierre D", "Quentin", "Pierre V", "Benoit"],
+                ["Mercredi", "Après-midi", "Pierre V", "Benoit", "Pierre D", "Quentin"],
+                ["Jeudi", "Matin", "Pierre D", "Benoit", "Quentin", "Pierre V"],
+                ["Jeudi", "Après-midi", "Pierre V", "Quentin", "Benoit", "Pierre D"],
+                ["Vendredi", "Matin", "Pierre V", "Benoit", "Pierre D", "Quentin"],
+                ["Vendredi", "Après-midi", "Pierre D", "Quentin", "Pierre V", "Benoit"]
+            ], columns=["Jour", "Période", "out PF 2P", "NOP", "pricing", "PF"])
+
+        st.subheader("📅 Édition du Planning")
+
+        # Tableau éditable pour le planning
+        edited_planning_df = st.data_editor(
+            st.session_state.planning_data,
+            num_rows="dynamic",
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Jour": st.column_config.SelectboxColumn("Jour", options=["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"], required=True),
+                "Période": st.column_config.SelectboxColumn("Période", options=["Matin", "Après-midi"], required=True),
+                "out PF 2P": st.column_config.SelectboxColumn("out PF 2P", options=["Benoit", "Quentin", "Pierre D", "Pierre V"], required=True),
+                "NOP": st.column_config.SelectboxColumn("NOP", options=["Benoit", "Quentin", "Pierre D", "Pierre V"], required=True),
+                "pricing": st.column_config.SelectboxColumn("pricing", options=["Benoit", "Quentin", "Pierre D", "Pierre V"], required=True),
+                "PF": st.column_config.SelectboxColumn("PF", options=["Benoit", "Quentin", "Pierre D", "Pierre V"], required=True)
+            }
+        )
+
+        # Sauvegarde des modifications
+        st.session_state.planning_data = edited_planning_df
+
+        # Export CSV du planning
+        if not edited_planning_df.empty:
+            csv_planning = edited_planning_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Télécharger le planning (CSV)",
+                data=csv_planning,
+                file_name='planning_equipe.csv',
                 mime='text/csv',
             )
 
