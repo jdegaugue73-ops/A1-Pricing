@@ -38,6 +38,8 @@
 
     /* Planning styles */
     .off-cell { background-color: #e9ecef; color: #6c757d; font-style: italic; }
+    .senior-col { background-color: #f1f8ff; }
+    th.senior-col { background-color: #e6f2ff; }
 
     /* Editable cells styles */
     td.editable-cell { cursor: text; transition: background-color 0.2s, box-shadow 0.2s; }
@@ -79,12 +81,12 @@
                 <tr>
                     <th rowspan="2">Jour</th>
                     <th rowspan="2">Période</th>
-                    <th colspan="2" class="role-header">Seniors</th>
+                    <th colspan="2" class="role-header senior-col">Seniors</th>
                     <th colspan="4" class="role-header">Middles</th>
                 </tr>
                 <tr>
-                    <th>Julien</th>
-                    <th>Damien</th>
+                    <th class="senior-col">Julien</th>
+                    <th class="senior-col">Damien</th>
                     <th>Pierre V</th>
                     <th>Pierre D</th>
                     <th>Benoit</th>
@@ -109,12 +111,12 @@
                 <tr>
                     <th rowspan="2">Jour</th>
                     <th rowspan="2">Période</th>
-                    <th colspan="2" class="role-header">Seniors</th>
+                    <th colspan="2" class="role-header senior-col">Seniors</th>
                     <th colspan="4" class="role-header">Middles</th>
                 </tr>
                 <tr>
-                    <th>Julien</th>
-                    <th>Damien</th>
+                    <th class="senior-col">Julien</th>
+                    <th class="senior-col">Damien</th>
                     <th>Pierre V</th>
                     <th>Pierre D</th>
                     <th>Benoit</th>
@@ -124,6 +126,9 @@
             <tbody id="resultTbody">
                 <!-- Généré en JS -->
             </tbody>
+            <tfoot id="resultTfoot">
+                <!-- Généré en JS -->
+            </tfoot>
         </table>
 
         <div class="btn-container">
@@ -159,9 +164,11 @@
                 }
                 html += `<td>${period}</td>`;
 
-                allMembers.forEach(person => {
+                allMembers.forEach((person, index) => {
+                    let isSenior = index < seniors.length;
+                    let bgClass = isSenior ? "senior-col" : "";
                     let id = `off_${person}_${getPeriodId(day, period)}`.replace(/ /g, "_");
-                    html += `<td><input type="checkbox" id="${id}" title="Marquer OFF pour ${person} - ${day} ${period}"></td>`;
+                    html += `<td class="${bgClass}"><input type="checkbox" id="${id}" title="Marquer OFF pour ${person} - ${day} ${period}"></td>`;
                 });
 
                 tr.innerHTML = html;
@@ -285,16 +292,19 @@
                 }
                 html += `<td>${period}</td>`;
 
-                allMembers.forEach(person => {
+                allMembers.forEach((person, index) => {
+                    let isSenior = index < seniors.length;
+                    let bgClass = isSenior ? "senior-col" : "";
+
                     if (offSlots[person].includes(pid)) {
-                        html += `<td class="editable-cell off-cell" contenteditable="true" onfocus="handleFocus(this)" onblur="handleBlur(this)">OFF</td>`;
+                        html += `<td class="editable-cell off-cell ${bgClass}" contenteditable="true" onfocus="handleFocus(this)" onblur="handleBlur(this)">OFF</td>`;
                     } else {
                         let tasks = schedule[pid][person];
                         if (tasks.length === 0) {
-                            html += `<td class="editable-cell" contenteditable="true" onfocus="handleFocus(this)" onblur="handleBlur(this)">-</td>`;
+                            html += `<td class="editable-cell ${bgClass}" contenteditable="true" onfocus="handleFocus(this)" onblur="handleBlur(this)">-</td>`;
                         } else {
                             let badges = tasks.map(t => `<span class="task-tag ${getTaskClass(t)}">${t}</span>`).join(" ");
-                            html += `<td class="editable-cell" contenteditable="true" onfocus="handleFocus(this)" onblur="handleBlur(this)">${badges}</td>`;
+                            html += `<td class="editable-cell ${bgClass}" contenteditable="true" onfocus="handleFocus(this)" onblur="handleBlur(this)">${badges}</td>`;
                         }
                     }
                 });
@@ -304,11 +314,52 @@
             });
         });
 
+        // Update task counters
+        updateCounters();
+
         // Show result section
         document.getElementById("planningResult").style.display = "block";
 
         // Scroll to result
         document.getElementById("planningResult").scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function updateCounters() {
+        let counts = Array.from({ length: allMembers.length }, () => ({}));
+        const tbody = document.getElementById("resultTbody");
+        const rows = tbody.querySelectorAll("tr");
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll("td.editable-cell");
+            cells.forEach((cell, index) => {
+                const tags = cell.querySelectorAll(".task-tag");
+                tags.forEach(tag => {
+                    let taskName = tag.innerText.trim();
+                    if (!counts[index][taskName]) counts[index][taskName] = 0;
+                    counts[index][taskName]++;
+                });
+            });
+        });
+
+        const tfoot = document.getElementById("resultTfoot");
+        let html = `<tr>
+            <th colspan="2" style="text-align: right; background-color: #f8f9fa; vertical-align: top; padding-top: 15px;">Détail des tâches :</th>`;
+
+        counts.forEach((personCounts, index) => {
+            let details = Object.entries(personCounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([task, count]) => `<div style="margin-bottom: 4px; font-weight: normal; font-size: 14px;"><b>${count}</b> ${task}</div>`)
+                .join("");
+
+            let isSenior = index < seniors.length;
+            let bgClass = isSenior ? "senior-col" : "";
+
+            html += `<th class="${bgClass}" style="background-color: #f8f9fa; color: #2c3e50; vertical-align: top; text-align: left;">
+                ${details || '<div style="color:#999; font-weight:normal; font-size:14px;">Aucune tâche</div>'}
+            </th>`;
+        });
+        html += `</tr>`;
+        tfoot.innerHTML = html;
     }
 
 
@@ -332,11 +383,13 @@
         let text = cell.innerText.trim();
         if (text === "" || text === "-") {
             cell.innerHTML = "-";
+            updateCounters();
             return;
         }
         if (text.toUpperCase() === "OFF") {
             cell.innerHTML = "OFF";
             cell.classList.add("off-cell");
+            updateCounters();
             return;
         }
 
@@ -356,6 +409,7 @@
         }).join(" ");
 
         cell.innerHTML = badges;
+        updateCounters();
     }
 
     function exportCSV() {
@@ -373,6 +427,7 @@
 
             // Handle table headers which might have rowspans/colspans
             let isHeader = row.parentElement.tagName === "THEAD";
+            let isFooter = row.parentElement.tagName === "TFOOT";
 
             cells.forEach(cell => {
                 let text = "";
@@ -390,10 +445,10 @@
                 }
 
                 // For body rows, if there's no Day cell, we push the previous day
-                if (!isHeader && cell === cells[0] && !cell.hasAttribute("rowspan")) {
+                if (!isHeader && !isFooter && cell === cells[0] && !cell.hasAttribute("rowspan")) {
                     rowData.push('"' + previousDay.replace(/"/g, '""') + '"');
                 }
-                if (!isHeader && cell.hasAttribute("rowspan")) {
+                if (!isHeader && !isFooter && cell.hasAttribute("rowspan")) {
                     previousDay = text;
                 }
 
