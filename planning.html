@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur de Planning</title>
+<style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f8f9fa; color: #333; }
+    h1, h2 { text-align: center; color: #2c3e50; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+
+    .section { margin-bottom: 40px; }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #dee2e6; padding: 12px; text-align: center; vertical-align: middle; }
+    th { background-color: #e9ecef; color: #495057; font-weight: 600; }
+
+    .role-header { background-color: #f1f3f5; font-weight: bold; text-align: left; padding-left: 15px; }
+
+    input[type="checkbox"] { transform: scale(1.5); cursor: pointer; }
+
+    .btn-container { text-align: center; margin-top: 20px; }
+    button {
+        padding: 12px 24px;
+        font-size: 16px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: background-color 0.3s;
+    }
+    button:hover { background-color: #0056b3; }
+    .btn-success { background-color: #28a745; }
+    .btn-success:hover { background-color: #218838; }
+
+    /* Planning styles */
+    .off-cell { background-color: #e9ecef; color: #6c757d; font-style: italic; }
+    .task-tag {
+        display: inline-block;
+        padding: 5px 10px;
+        margin: 2px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 500;
+        color: white;
+    }
+    .task-out-pf-seniors { background-color: #e67e22; }
+    .task-pf { background-color: #2980b9; }
+    .task-pricing { background-color: #8e44ad; }
+    .task-out-pf-middle { background-color: #d35400; }
+    .task-on-pf { background-color: #16a085; }
+    .task-support { background-color: #7f8c8d; }
+
+    #planningResult { display: none; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📅 Générateur de Planning d'Équipe</h1>
+
+    <div class="section" id="configSection">
+        <h2>1. Renseigner les jours de repos (OFF)</h2>
+        <p style="text-align: center; color: #666;">Cochez les jours où les collaborateurs sont absents (OFF).</p>
+
+        <table id="offTable">
+            <thead>
+                <tr>
+                    <th>Collaborateur</th>
+                    <th>Lundi</th>
+                    <th>Mardi</th>
+                    <th>Mercredi</th>
+                    <th>Jeudi</th>
+                    <th>Vendredi</th>
+                    <th>Samedi</th>
+                </tr>
+            </thead>
+            <tbody id="offTbody">
+                <!-- Généré en JS -->
+            </tbody>
+        </table>
+
+        <div class="btn-container">
+            <button onclick="generatePlanning()">⚙️ Générer le planning automatisé</button>
+        </div>
+    </div>
+
+    <div class="section" id="planningResult">
+        <h2>2. Planning de la semaine</h2>
+        <table id="resultTable">
+            <thead>
+                <tr>
+                    <th>Collaborateur</th>
+                    <th>Lundi</th>
+                    <th>Mardi</th>
+                    <th>Mercredi</th>
+                    <th>Jeudi</th>
+                    <th>Vendredi</th>
+                    <th>Samedi</th>
+                </tr>
+            </thead>
+            <tbody id="resultTbody">
+                <!-- Généré en JS -->
+            </tbody>
+        </table>
+
+        <div class="btn-container">
+            <button class="btn-success" onclick="exportCSV()">📥 Télécharger le Planning (CSV)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const seniors = ["Julien", "Damien"];
+    const middles = ["Pierre V", "Pierre D", "Benoit", "Quentin"];
+    const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+
+    const seniorTasks = ["out PF seniors", "PF"];
+    const middleTasks = ["Pricing", "Out PF middle", "On PF"];
+
+    // Initialize config table
+    function initConfigTable() {
+        const tbody = document.getElementById("offTbody");
+
+        // Seniors
+        let trS = document.createElement("tr");
+        trS.innerHTML = `<td colspan="7" class="role-header">Seniors</td>`;
+        tbody.appendChild(trS);
+
+        seniors.forEach(person => {
+            let tr = document.createElement("tr");
+            let html = `<td><strong>${person}</strong></td>`;
+            days.forEach(day => {
+                let id = `off_${person}_${day}`.replace(/ /g, "_");
+                html += `<td><input type="checkbox" id="${id}" title="Marquer OFF pour ${day}"></td>`;
+            });
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
+        });
+
+        // Middles
+        let trM = document.createElement("tr");
+        trM.innerHTML = `<td colspan="7" class="role-header">Middles</td>`;
+        tbody.appendChild(trM);
+
+        middles.forEach(person => {
+            let tr = document.createElement("tr");
+            let html = `<td><strong>${person}</strong></td>`;
+            days.forEach(day => {
+                let id = `off_${person}_${day}`.replace(/ /g, "_");
+                html += `<td><input type="checkbox" id="${id}" title="Marquer OFF pour ${day}"></td>`;
+            });
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Helper to format task CSS class
+    function getTaskClass(task) {
+        let cleanTask = task.toLowerCase().replace(/ /g, "-");
+        return `task-${cleanTask}`;
+    }
+
+    function generatePlanning() {
+        // 1. Read OFF days
+        let offDays = {};
+        [...seniors, ...middles].forEach(person => {
+            offDays[person] = [];
+            days.forEach(day => {
+                let id = `off_${person}_${day}`.replace(/ /g, "_");
+                if (document.getElementById(id).checked) {
+                    offDays[person].push(day);
+                }
+            });
+        });
+
+        // 2. State for equitable distribution
+        let taskCounts = {};
+        [...seniors, ...middles].forEach(p => {
+            taskCounts[p] = {};
+            [...seniorTasks, ...middleTasks, "Support"].forEach(t => taskCounts[p][t] = 0);
+        });
+
+        let schedule = {}; // schedule[day][person] = [tasks]
+
+        // 3. Assign tasks day by day
+        days.forEach(day => {
+            schedule[day] = {};
+            [...seniors, ...middles].forEach(p => schedule[day][p] = []);
+
+            // Process Seniors
+            let availableSeniors = seniors.filter(s => !offDays[s].includes(day));
+            if (availableSeniors.length > 0) {
+                // Shuffle array slightly to avoid always picking the same person for ties
+                availableSeniors.sort(() => Math.random() - 0.5);
+
+                seniorTasks.forEach(task => {
+                    availableSeniors.sort((a, b) => {
+                        // 1. Fewest tasks today
+                        if (schedule[day][a].length !== schedule[day][b].length) {
+                            return schedule[day][a].length - schedule[day][b].length;
+                        }
+                        // 2. Fewest assignments of THIS task this week
+                        if (taskCounts[a][task] !== taskCounts[b][task]) {
+                            return taskCounts[a][task] - taskCounts[b][task];
+                        }
+                        // 3. Fewest total tasks overall this week
+                        let totalA = Object.values(taskCounts[a]).reduce((sum, val) => sum + val, 0);
+                        let totalB = Object.values(taskCounts[b]).reduce((sum, val) => sum + val, 0);
+                        return totalA - totalB;
+                    });
+
+                    let chosen = availableSeniors[0];
+                    schedule[day][chosen].push(task);
+                    taskCounts[chosen][task]++;
+                });
+            }
+
+            // Process Middles
+            let availableMiddles = middles.filter(m => !offDays[m].includes(day));
+            if (availableMiddles.length > 0) {
+                availableMiddles.sort(() => Math.random() - 0.5);
+
+                middleTasks.forEach(task => {
+                    availableMiddles.sort((a, b) => {
+                        if (schedule[day][a].length !== schedule[day][b].length) {
+                            return schedule[day][a].length - schedule[day][b].length;
+                        }
+                        if (taskCounts[a][task] !== taskCounts[b][task]) {
+                            return taskCounts[a][task] - taskCounts[b][task];
+                        }
+                        let totalA = Object.values(taskCounts[a]).reduce((sum, val) => sum + val, 0);
+                        let totalB = Object.values(taskCounts[b]).reduce((sum, val) => sum + val, 0);
+                        return totalA - totalB;
+                    });
+
+                    let chosen = availableMiddles[0];
+                    schedule[day][chosen].push(task);
+                    taskCounts[chosen][task]++;
+                });
+
+                // Assign Support to middles with no tasks today
+                availableMiddles.forEach(m => {
+                    if (schedule[day][m].length === 0) {
+                        schedule[day][m].push("Support");
+                        taskCounts[m]["Support"]++;
+                    }
+                });
+            }
+        });
+
+        // 4. Render results
+        renderPlanning(schedule, offDays);
+    }
+
+    function renderPlanning(schedule, offDays) {
+        const tbody = document.getElementById("resultTbody");
+        tbody.innerHTML = ""; // clear
+
+        // Render Seniors
+        let trS = document.createElement("tr");
+        trS.innerHTML = `<td colspan="7" class="role-header">Seniors</td>`;
+        tbody.appendChild(trS);
+
+        seniors.forEach(person => {
+            let tr = document.createElement("tr");
+            let html = `<td><strong>${person}</strong></td>`;
+            days.forEach(day => {
+                if (offDays[person].includes(day)) {
+                    html += `<td class="off-cell">OFF</td>`;
+                } else {
+                    let tasks = schedule[day][person];
+                    if (tasks.length === 0) {
+                        html += `<td>-</td>`;
+                    } else {
+                        let badges = tasks.map(t => `<span class="task-tag ${getTaskClass(t)}">${t}</span>`).join(" ");
+                        html += `<td>${badges}</td>`;
+                    }
+                }
+            });
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
+        });
+
+        // Render Middles
+        let trM = document.createElement("tr");
+        trM.innerHTML = `<td colspan="7" class="role-header">Middles</td>`;
+        tbody.appendChild(trM);
+
+        middles.forEach(person => {
+            let tr = document.createElement("tr");
+            let html = `<td><strong>${person}</strong></td>`;
+            days.forEach(day => {
+                if (offDays[person].includes(day)) {
+                    html += `<td class="off-cell">OFF</td>`;
+                } else {
+                    let tasks = schedule[day][person];
+                    if (tasks.length === 0) {
+                        html += `<td>-</td>`;
+                    } else {
+                        let badges = tasks.map(t => `<span class="task-tag ${getTaskClass(t)}">${t}</span>`).join(" ");
+                        html += `<td>${badges}</td>`;
+                    }
+                }
+            });
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
+        });
+
+        // Show result section
+        document.getElementById("planningResult").style.display = "block";
+
+        // Scroll to result
+        document.getElementById("planningResult").scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function exportCSV() {
+        let table = document.getElementById("resultTable");
+        let rows = table.querySelectorAll("tr");
+
+        // Add BOM for Excel compatibility with French accents
+        let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+
+        rows.forEach(function(row) {
+            let rowData = [];
+
+            // Skip role headers for data cleanliness
+            if (row.querySelector(".role-header")) return;
+
+            let cells = row.querySelectorAll("th, td");
+
+            cells.forEach((cell, index) => {
+                let text = "";
+                if (cell.classList.contains("off-cell")) {
+                    text = "OFF";
+                } else {
+                    // Extract text from spans if any, else normal text
+                    let tags = cell.querySelectorAll(".task-tag");
+                    if (tags.length > 0) {
+                        let t = [];
+                        tags.forEach(tag => t.push(tag.innerText));
+                        text = t.join(" + ");
+                    } else {
+                        text = cell.innerText.trim();
+                    }
+                }
+                rowData.push('"' + text.replace(/"/g, '""') + '"');
+            });
+            csvContent += rowData.join(";") + "\r\n";
+        });
+
+        let encodedUri = encodeURI(csvContent);
+        let link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "planning_equipe.csv");
+        document.body.appendChild(link); // Required for FF
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Init on load
+    document.addEventListener("DOMContentLoaded", initConfigTable);
+</script>
+
+</body>
+</html>
