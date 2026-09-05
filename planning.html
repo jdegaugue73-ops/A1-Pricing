@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur de Planning (Demi-journées)</title>
+<style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f8f9fa; color: #333; }
+    h1, h2 { text-align: center; color: #2c3e50; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+
+    .section { margin-bottom: 40px; }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #dee2e6; padding: 12px; text-align: center; vertical-align: middle; }
+    th { background-color: #e9ecef; color: #495057; font-weight: 600; }
+
+    .role-header { background-color: #dbe4eb; }
+    .day-header { font-weight: bold; background-color: #f8f9fa; }
+
+    input[type="checkbox"] { transform: scale(1.5); cursor: pointer; }
+
+    .btn-container { text-align: center; margin-top: 20px; }
+    button {
+        padding: 12px 24px;
+        font-size: 16px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: background-color 0.3s;
+    }
+    button:hover { background-color: #0056b3; }
+    .btn-success { background-color: #28a745; }
+    .btn-success:hover { background-color: #218838; }
+
+    /* Planning styles */
+    .off-cell { background-color: #e9ecef; color: #6c757d; font-style: italic; }
+
+    /* Editable cells styles */
+    td.editable-cell { cursor: text; transition: background-color 0.2s, box-shadow 0.2s; }
+    td.editable-cell:hover { background-color: #f1f8ff; box-shadow: inset 0 0 0 1px #80bdff; }
+    td.editable-cell:focus { outline: none; background-color: #fff; box-shadow: inset 0 0 0 2px #007bff; }
+    .task-tag {
+        display: inline-block;
+        padding: 5px 10px;
+        margin: 2px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 500;
+        color: white;
+    }
+    .task-out-pf-seniors { background-color: #e67e22; }
+    .task-pf { background-color: #2980b9; }
+    .task-pricing { background-color: #8e44ad; }
+    .task-out-pf-middle { background-color: #d35400; }
+    .task-on-pf { background-color: #16a085; }
+
+
+
+    .task-default { background-color: #95a5a6; }
+    #planningResult { display: none; }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📅 Générateur de Planning d'Équipe</h1>
+
+    <div class="section" id="configSection">
+        <h2>1. Renseigner les demi-journées de repos (OFF)</h2>
+        <p style="text-align: center; color: #666;">Cochez les créneaux où les collaborateurs sont absents (OFF).</p>
+
+        <table id="offTable">
+            <thead>
+                <tr>
+                    <th rowspan="2">Jour</th>
+                    <th rowspan="2">Période</th>
+                    <th colspan="2" class="role-header">Seniors</th>
+                    <th colspan="4" class="role-header">Middles</th>
+                </tr>
+                <tr>
+                    <th>Julien</th>
+                    <th>Damien</th>
+                    <th>Pierre V</th>
+                    <th>Pierre D</th>
+                    <th>Benoit</th>
+                    <th>Quentin</th>
+                </tr>
+            </thead>
+            <tbody id="offTbody">
+                <!-- Généré en JS -->
+            </tbody>
+        </table>
+
+        <div class="btn-container">
+            <button onclick="generatePlanning()">⚙️ Générer le planning automatisé</button>
+        </div>
+    </div>
+
+    <div class="section" id="planningResult">
+        <h2>2. Planning de la semaine</h2>
+        <table id="resultTable">
+            <thead>
+                <tr>
+                    <th rowspan="2">Jour</th>
+                    <th rowspan="2">Période</th>
+                    <th colspan="2" class="role-header">Seniors</th>
+                    <th colspan="4" class="role-header">Middles</th>
+                </tr>
+                <tr>
+                    <th>Julien</th>
+                    <th>Damien</th>
+                    <th>Pierre V</th>
+                    <th>Pierre D</th>
+                    <th>Benoit</th>
+                    <th>Quentin</th>
+                </tr>
+            </thead>
+            <tbody id="resultTbody">
+                <!-- Généré en JS -->
+            </tbody>
+        </table>
+
+        <div class="btn-container">
+            <button class="btn-success" onclick="exportCSV()">📥 Télécharger le Planning (CSV)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const seniors = ["Julien", "Damien"];
+    const middles = ["Pierre V", "Pierre D", "Benoit", "Quentin"];
+    const allMembers = [...seniors, ...middles];
+    const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+    const periods = ["Matin", "Après-midi"];
+
+    const seniorTasks = ["out PF seniors", "PF"];
+    const middleTasks = ["Pricing", "Out PF middle", "On PF"];
+
+    function getPeriodId(day, period) {
+        return `${day}_${period}`.replace(/ /g, "_").replace(/-/g, "_");
+    }
+
+    // Initialize config table
+    function initConfigTable() {
+        const tbody = document.getElementById("offTbody");
+
+        days.forEach(day => {
+            periods.forEach((period, pIndex) => {
+                let tr = document.createElement("tr");
+                let html = "";
+                if (pIndex === 0) {
+                    html += `<td rowspan="2" class="day-header">${day}</td>`;
+                }
+                html += `<td>${period}</td>`;
+
+                allMembers.forEach(person => {
+                    let id = `off_${person}_${getPeriodId(day, period)}`.replace(/ /g, "_");
+                    html += `<td><input type="checkbox" id="${id}" title="Marquer OFF pour ${person} - ${day} ${period}"></td>`;
+                });
+
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
+            });
+        });
+    }
+
+    // Helper to format task CSS class
+    function getTaskClass(task) {
+        let cleanTask = task.toLowerCase().replace(/ /g, "-");
+        return `task-${cleanTask}`;
+    }
+
+    function generatePlanning() {
+        // 1. Read OFF slots
+        let offSlots = {}; // offSlots[person] = ["Lundi_Matin", ...]
+        allMembers.forEach(person => {
+            offSlots[person] = [];
+            days.forEach(day => {
+                periods.forEach(period => {
+                    let pid = getPeriodId(day, period);
+                    let id = `off_${person}_${pid}`.replace(/ /g, "_");
+                    if (document.getElementById(id).checked) {
+                        offSlots[person].push(pid);
+                    }
+                });
+            });
+        });
+
+        // 2. State for equitable distribution
+        let taskCounts = {};
+        allMembers.forEach(p => {
+            taskCounts[p] = {};
+            [...seniorTasks, ...middleTasks].forEach(t => taskCounts[p][t] = 0);
+        });
+
+        let schedule = {}; // schedule[pid][person] = [tasks]
+
+        // 3. Assign tasks slot by slot
+        days.forEach(day => {
+            periods.forEach(period => {
+                let pid = getPeriodId(day, period);
+                schedule[pid] = {};
+                allMembers.forEach(p => schedule[pid][p] = []);
+
+                // Process Seniors
+                let availableSeniors = seniors.filter(s => !offSlots[s].includes(pid));
+                if (availableSeniors.length > 0) {
+                    availableSeniors.sort(() => Math.random() - 0.5);
+
+                    seniorTasks.forEach(task => {
+                        availableSeniors.sort((a, b) => {
+                            if (schedule[pid][a].length !== schedule[pid][b].length) {
+                                return schedule[pid][a].length - schedule[pid][b].length;
+                            }
+                            if (taskCounts[a][task] !== taskCounts[b][task]) {
+                                return taskCounts[a][task] - taskCounts[b][task];
+                            }
+                            let totalA = Object.values(taskCounts[a]).reduce((sum, val) => sum + val, 0);
+                            let totalB = Object.values(taskCounts[b]).reduce((sum, val) => sum + val, 0);
+                            return totalA - totalB;
+                        });
+
+                        let chosen = availableSeniors[0];
+                        schedule[pid][chosen].push(task);
+                        taskCounts[chosen][task]++;
+                    });
+                }
+
+                // Process Middles
+                let availableMiddles = middles.filter(m => !offSlots[m].includes(pid));
+                if (availableMiddles.length > 0) {
+                    availableMiddles.sort(() => Math.random() - 0.5);
+
+                    middleTasks.forEach(task => {
+                        availableMiddles.sort((a, b) => {
+                            if (schedule[pid][a].length !== schedule[pid][b].length) {
+                                return schedule[pid][a].length - schedule[pid][b].length;
+                            }
+                            if (taskCounts[a][task] !== taskCounts[b][task]) {
+                                return taskCounts[a][task] - taskCounts[b][task];
+                            }
+                            let totalA = Object.values(taskCounts[a]).reduce((sum, val) => sum + val, 0);
+                            let totalB = Object.values(taskCounts[b]).reduce((sum, val) => sum + val, 0);
+                            return totalA - totalB;
+                        });
+
+                        let chosen = availableMiddles[0];
+                        schedule[pid][chosen].push(task);
+                        taskCounts[chosen][task]++;
+                    });
+
+                    // Assign Pricing as fallback to middles with no tasks this slot
+                    availableMiddles.forEach(m => {
+                        if (schedule[pid][m].length === 0) {
+                            schedule[pid][m].push("Pricing");
+                            taskCounts[m]["Pricing"]++;
+                        }
+                    });
+                }
+            });
+        });
+
+        // 4. Render results
+        renderPlanning(schedule, offSlots);
+    }
+
+    function renderPlanning(schedule, offSlots) {
+        const tbody = document.getElementById("resultTbody");
+        tbody.innerHTML = ""; // clear
+
+        days.forEach(day => {
+            periods.forEach((period, pIndex) => {
+                let pid = getPeriodId(day, period);
+                let tr = document.createElement("tr");
+                let html = "";
+
+                if (pIndex === 0) {
+                    html += `<td rowspan="2" class="day-header">${day}</td>`;
+                }
+                html += `<td>${period}</td>`;
+
+                allMembers.forEach(person => {
+                    if (offSlots[person].includes(pid)) {
+                        html += `<td class="off-cell">OFF</td>`;
+                    } else {
+                        let tasks = schedule[pid][person];
+                        if (tasks.length === 0) {
+                            html += `<td class="editable-cell" contenteditable="true" onfocus="handleFocus(this)" onblur="handleBlur(this)">-</td>`;
+                        } else {
+                            let badges = tasks.map(t => `<span class="task-tag ${getTaskClass(t)}">${t}</span>`).join(" ");
+                            html += `<td class="editable-cell" contenteditable="true" onfocus="handleFocus(this)" onblur="handleBlur(this)">${badges}</td>`;
+                        }
+                    }
+                });
+
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
+            });
+        });
+
+        // Show result section
+        document.getElementById("planningResult").style.display = "block";
+
+        // Scroll to result
+        document.getElementById("planningResult").scrollIntoView({ behavior: 'smooth' });
+    }
+
+
+    // Focus handler for manual editing
+    function handleFocus(cell) {
+        if (cell.classList.contains("off-cell")) return;
+
+        let tags = cell.querySelectorAll(".task-tag");
+        if (tags.length > 0) {
+            let t = [];
+            tags.forEach(tag => t.push(tag.innerText));
+            cell.innerText = t.join(" + ");
+        }
+    }
+
+    // Blur handler for manual editing
+    function handleBlur(cell) {
+        if (cell.classList.contains("off-cell")) return;
+
+        let text = cell.innerText.trim();
+        if (text === "" || text === "-") {
+            cell.innerHTML = "-";
+            return;
+        }
+
+        let tasks = text.split("+").map(t => t.trim()).filter(t => t.length > 0);
+        let badges = tasks.map(t => {
+            let className = getTaskClass(t);
+            // Default to gray if we don't recognize the task class
+            if (!document.styleSheets[0].cssRules) return `<span class="task-tag ${className}">${t}</span>`;
+
+            let known = ["task-out-pf-seniors", "task-pf", "task-pricing", "task-out-pf-middle", "task-on-pf", "task-support"];
+            if(!known.includes(className)) {
+                className = "task-default";
+            }
+            return `<span class="task-tag ${className}">${t}</span>`;
+        }).join(" ");
+
+        cell.innerHTML = badges;
+    }
+
+    function exportCSV() {
+        let table = document.getElementById("resultTable");
+        let rows = table.querySelectorAll("tr");
+
+        // Add BOM for Excel compatibility with French accents
+        let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+
+        let previousDay = ""; // Track rowspan logic for day column
+
+        rows.forEach(function(row) {
+            let rowData = [];
+            let cells = row.querySelectorAll("th, td");
+
+            // Handle table headers which might have rowspans/colspans
+            let isHeader = row.parentElement.tagName === "THEAD";
+
+            cells.forEach(cell => {
+                let text = "";
+                if (cell.classList.contains("off-cell")) {
+                    text = "OFF";
+                } else {
+                    let tags = cell.querySelectorAll(".task-tag");
+                    if (tags.length > 0) {
+                        let t = [];
+                        tags.forEach(tag => t.push(tag.innerText));
+                        text = t.join(" + ");
+                    } else {
+                        text = cell.innerText.trim();
+                    }
+                }
+
+                // For body rows, if there's no Day cell, we push the previous day
+                if (!isHeader && cell === cells[0] && !cell.hasAttribute("rowspan")) {
+                    rowData.push('"' + previousDay.replace(/"/g, '""') + '"');
+                }
+                if (!isHeader && cell.hasAttribute("rowspan")) {
+                    previousDay = text;
+                }
+
+                // For headers, if it has colspan, duplicate it to keep CSV columns aligned
+                let colSpan = cell.getAttribute("colspan") ? parseInt(cell.getAttribute("colspan")) : 1;
+
+                for(let i=0; i<colSpan; i++) {
+                    rowData.push('"' + text.replace(/"/g, '""') + '"');
+                }
+            });
+            csvContent += rowData.join(";") + "\r\n";
+        });
+
+        let encodedUri = encodeURI(csvContent);
+        let link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "planning_equipe_demi_journees.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Init on load
+    document.addEventListener("DOMContentLoaded", initConfigTable);
+</script>
+
+</body>
+</html>
