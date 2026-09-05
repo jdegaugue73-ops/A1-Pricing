@@ -103,6 +103,7 @@
 
     <div class="section" id="planningResult">
         <h2>2. Planning de la semaine</h2>
+        <p style="text-align: center; color: #666; font-style: italic;">💡 Astuce : Vous pouvez cliquer sur n'importe quelle case du planning pour modifier son contenu manuellement.</p>
         <table id="resultTable">
             <thead>
                 <tr>
@@ -286,7 +287,7 @@
 
                 allMembers.forEach(person => {
                     if (offSlots[person].includes(pid)) {
-                        html += `<td class="off-cell">OFF</td>`;
+                        html += `<td class="editable-cell off-cell" contenteditable="true" onfocus="handleFocus(this)" onblur="handleBlur(this)">OFF</td>`;
                     } else {
                         let tasks = schedule[pid][person];
                         if (tasks.length === 0) {
@@ -313,7 +314,10 @@
 
     // Focus handler for manual editing
     function handleFocus(cell) {
-        if (cell.classList.contains("off-cell")) return;
+        if (cell.innerText.trim() === "OFF") {
+            cell.innerText = "";
+            cell.classList.remove("off-cell");
+        }
 
         let tags = cell.querySelectorAll(".task-tag");
         if (tags.length > 0) {
@@ -325,13 +329,18 @@
 
     // Blur handler for manual editing
     function handleBlur(cell) {
-        if (cell.classList.contains("off-cell")) return;
-
         let text = cell.innerText.trim();
         if (text === "" || text === "-") {
             cell.innerHTML = "-";
             return;
         }
+        if (text.toUpperCase() === "OFF") {
+            cell.innerHTML = "OFF";
+            cell.classList.add("off-cell");
+            return;
+        }
+
+        cell.classList.remove("off-cell");
 
         let tasks = text.split("+").map(t => t.trim()).filter(t => t.length > 0);
         let badges = tasks.map(t => {
