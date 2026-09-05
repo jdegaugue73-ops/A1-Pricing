@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Générateur de Planning</title>
+<title>Générateur de Planning (Demi-journées)</title>
 <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f8f9fa; color: #333; }
     h1, h2 { text-align: center; color: #2c3e50; }
@@ -15,7 +15,8 @@
     th, td { border: 1px solid #dee2e6; padding: 12px; text-align: center; vertical-align: middle; }
     th { background-color: #e9ecef; color: #495057; font-weight: 600; }
 
-    .role-header { background-color: #f1f3f5; font-weight: bold; text-align: left; padding-left: 15px; }
+    .role-header { background-color: #dbe4eb; }
+    .day-header { font-weight: bold; background-color: #f8f9fa; }
 
     input[type="checkbox"] { transform: scale(1.5); cursor: pointer; }
 
@@ -62,19 +63,24 @@
     <h1>📅 Générateur de Planning d'Équipe</h1>
 
     <div class="section" id="configSection">
-        <h2>1. Renseigner les jours de repos (OFF)</h2>
-        <p style="text-align: center; color: #666;">Cochez les jours où les collaborateurs sont absents (OFF).</p>
+        <h2>1. Renseigner les demi-journées de repos (OFF)</h2>
+        <p style="text-align: center; color: #666;">Cochez les créneaux où les collaborateurs sont absents (OFF).</p>
 
         <table id="offTable">
             <thead>
                 <tr>
-                    <th>Collaborateur</th>
-                    <th>Lundi</th>
-                    <th>Mardi</th>
-                    <th>Mercredi</th>
-                    <th>Jeudi</th>
-                    <th>Vendredi</th>
-                    <th>Samedi</th>
+                    <th rowspan="2">Jour</th>
+                    <th rowspan="2">Période</th>
+                    <th colspan="2" class="role-header">Seniors</th>
+                    <th colspan="4" class="role-header">Middles</th>
+                </tr>
+                <tr>
+                    <th>Julien</th>
+                    <th>Damien</th>
+                    <th>Pierre V</th>
+                    <th>Pierre D</th>
+                    <th>Benoit</th>
+                    <th>Quentin</th>
                 </tr>
             </thead>
             <tbody id="offTbody">
@@ -92,13 +98,18 @@
         <table id="resultTable">
             <thead>
                 <tr>
-                    <th>Collaborateur</th>
-                    <th>Lundi</th>
-                    <th>Mardi</th>
-                    <th>Mercredi</th>
-                    <th>Jeudi</th>
-                    <th>Vendredi</th>
-                    <th>Samedi</th>
+                    <th rowspan="2">Jour</th>
+                    <th rowspan="2">Période</th>
+                    <th colspan="2" class="role-header">Seniors</th>
+                    <th colspan="4" class="role-header">Middles</th>
+                </tr>
+                <tr>
+                    <th>Julien</th>
+                    <th>Damien</th>
+                    <th>Pierre V</th>
+                    <th>Pierre D</th>
+                    <th>Benoit</th>
+                    <th>Quentin</th>
                 </tr>
             </thead>
             <tbody id="resultTbody">
@@ -115,45 +126,38 @@
 <script>
     const seniors = ["Julien", "Damien"];
     const middles = ["Pierre V", "Pierre D", "Benoit", "Quentin"];
+    const allMembers = [...seniors, ...middles];
     const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+    const periods = ["Matin", "Après-midi"];
 
     const seniorTasks = ["out PF seniors", "PF"];
     const middleTasks = ["Pricing", "Out PF middle", "On PF"];
+
+    function getPeriodId(day, period) {
+        return `${day}_${period}`.replace(/ /g, "_").replace(/-/g, "_");
+    }
 
     // Initialize config table
     function initConfigTable() {
         const tbody = document.getElementById("offTbody");
 
-        // Seniors
-        let trS = document.createElement("tr");
-        trS.innerHTML = `<td colspan="7" class="role-header">Seniors</td>`;
-        tbody.appendChild(trS);
+        days.forEach(day => {
+            periods.forEach((period, pIndex) => {
+                let tr = document.createElement("tr");
+                let html = "";
+                if (pIndex === 0) {
+                    html += `<td rowspan="2" class="day-header">${day}</td>`;
+                }
+                html += `<td>${period}</td>`;
 
-        seniors.forEach(person => {
-            let tr = document.createElement("tr");
-            let html = `<td><strong>${person}</strong></td>`;
-            days.forEach(day => {
-                let id = `off_${person}_${day}`.replace(/ /g, "_");
-                html += `<td><input type="checkbox" id="${id}" title="Marquer OFF pour ${day}"></td>`;
+                allMembers.forEach(person => {
+                    let id = `off_${person}_${getPeriodId(day, period)}`.replace(/ /g, "_");
+                    html += `<td><input type="checkbox" id="${id}" title="Marquer OFF pour ${person} - ${day} ${period}"></td>`;
+                });
+
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
             });
-            tr.innerHTML = html;
-            tbody.appendChild(tr);
-        });
-
-        // Middles
-        let trM = document.createElement("tr");
-        trM.innerHTML = `<td colspan="7" class="role-header">Middles</td>`;
-        tbody.appendChild(trM);
-
-        middles.forEach(person => {
-            let tr = document.createElement("tr");
-            let html = `<td><strong>${person}</strong></td>`;
-            days.forEach(day => {
-                let id = `off_${person}_${day}`.replace(/ /g, "_");
-                html += `<td><input type="checkbox" id="${id}" title="Marquer OFF pour ${day}"></td>`;
-            });
-            tr.innerHTML = html;
-            tbody.appendChild(tr);
         });
     }
 
@@ -164,149 +168,131 @@
     }
 
     function generatePlanning() {
-        // 1. Read OFF days
-        let offDays = {};
-        [...seniors, ...middles].forEach(person => {
-            offDays[person] = [];
+        // 1. Read OFF slots
+        let offSlots = {}; // offSlots[person] = ["Lundi_Matin", ...]
+        allMembers.forEach(person => {
+            offSlots[person] = [];
             days.forEach(day => {
-                let id = `off_${person}_${day}`.replace(/ /g, "_");
-                if (document.getElementById(id).checked) {
-                    offDays[person].push(day);
-                }
+                periods.forEach(period => {
+                    let pid = getPeriodId(day, period);
+                    let id = `off_${person}_${pid}`.replace(/ /g, "_");
+                    if (document.getElementById(id).checked) {
+                        offSlots[person].push(pid);
+                    }
+                });
             });
         });
 
         // 2. State for equitable distribution
         let taskCounts = {};
-        [...seniors, ...middles].forEach(p => {
+        allMembers.forEach(p => {
             taskCounts[p] = {};
             [...seniorTasks, ...middleTasks, "Support"].forEach(t => taskCounts[p][t] = 0);
         });
 
-        let schedule = {}; // schedule[day][person] = [tasks]
+        let schedule = {}; // schedule[pid][person] = [tasks]
 
-        // 3. Assign tasks day by day
+        // 3. Assign tasks slot by slot
         days.forEach(day => {
-            schedule[day] = {};
-            [...seniors, ...middles].forEach(p => schedule[day][p] = []);
+            periods.forEach(period => {
+                let pid = getPeriodId(day, period);
+                schedule[pid] = {};
+                allMembers.forEach(p => schedule[pid][p] = []);
 
-            // Process Seniors
-            let availableSeniors = seniors.filter(s => !offDays[s].includes(day));
-            if (availableSeniors.length > 0) {
-                // Shuffle array slightly to avoid always picking the same person for ties
-                availableSeniors.sort(() => Math.random() - 0.5);
+                // Process Seniors
+                let availableSeniors = seniors.filter(s => !offSlots[s].includes(pid));
+                if (availableSeniors.length > 0) {
+                    availableSeniors.sort(() => Math.random() - 0.5);
 
-                seniorTasks.forEach(task => {
-                    availableSeniors.sort((a, b) => {
-                        // 1. Fewest tasks today
-                        if (schedule[day][a].length !== schedule[day][b].length) {
-                            return schedule[day][a].length - schedule[day][b].length;
-                        }
-                        // 2. Fewest assignments of THIS task this week
-                        if (taskCounts[a][task] !== taskCounts[b][task]) {
-                            return taskCounts[a][task] - taskCounts[b][task];
-                        }
-                        // 3. Fewest total tasks overall this week
-                        let totalA = Object.values(taskCounts[a]).reduce((sum, val) => sum + val, 0);
-                        let totalB = Object.values(taskCounts[b]).reduce((sum, val) => sum + val, 0);
-                        return totalA - totalB;
+                    seniorTasks.forEach(task => {
+                        availableSeniors.sort((a, b) => {
+                            if (schedule[pid][a].length !== schedule[pid][b].length) {
+                                return schedule[pid][a].length - schedule[pid][b].length;
+                            }
+                            if (taskCounts[a][task] !== taskCounts[b][task]) {
+                                return taskCounts[a][task] - taskCounts[b][task];
+                            }
+                            let totalA = Object.values(taskCounts[a]).reduce((sum, val) => sum + val, 0);
+                            let totalB = Object.values(taskCounts[b]).reduce((sum, val) => sum + val, 0);
+                            return totalA - totalB;
+                        });
+
+                        let chosen = availableSeniors[0];
+                        schedule[pid][chosen].push(task);
+                        taskCounts[chosen][task]++;
+                    });
+                }
+
+                // Process Middles
+                let availableMiddles = middles.filter(m => !offSlots[m].includes(pid));
+                if (availableMiddles.length > 0) {
+                    availableMiddles.sort(() => Math.random() - 0.5);
+
+                    middleTasks.forEach(task => {
+                        availableMiddles.sort((a, b) => {
+                            if (schedule[pid][a].length !== schedule[pid][b].length) {
+                                return schedule[pid][a].length - schedule[pid][b].length;
+                            }
+                            if (taskCounts[a][task] !== taskCounts[b][task]) {
+                                return taskCounts[a][task] - taskCounts[b][task];
+                            }
+                            let totalA = Object.values(taskCounts[a]).reduce((sum, val) => sum + val, 0);
+                            let totalB = Object.values(taskCounts[b]).reduce((sum, val) => sum + val, 0);
+                            return totalA - totalB;
+                        });
+
+                        let chosen = availableMiddles[0];
+                        schedule[pid][chosen].push(task);
+                        taskCounts[chosen][task]++;
                     });
 
-                    let chosen = availableSeniors[0];
-                    schedule[day][chosen].push(task);
-                    taskCounts[chosen][task]++;
-                });
-            }
-
-            // Process Middles
-            let availableMiddles = middles.filter(m => !offDays[m].includes(day));
-            if (availableMiddles.length > 0) {
-                availableMiddles.sort(() => Math.random() - 0.5);
-
-                middleTasks.forEach(task => {
-                    availableMiddles.sort((a, b) => {
-                        if (schedule[day][a].length !== schedule[day][b].length) {
-                            return schedule[day][a].length - schedule[day][b].length;
+                    // Assign Support to middles with no tasks this slot
+                    availableMiddles.forEach(m => {
+                        if (schedule[pid][m].length === 0) {
+                            schedule[pid][m].push("Support");
+                            taskCounts[m]["Support"]++;
                         }
-                        if (taskCounts[a][task] !== taskCounts[b][task]) {
-                            return taskCounts[a][task] - taskCounts[b][task];
-                        }
-                        let totalA = Object.values(taskCounts[a]).reduce((sum, val) => sum + val, 0);
-                        let totalB = Object.values(taskCounts[b]).reduce((sum, val) => sum + val, 0);
-                        return totalA - totalB;
                     });
-
-                    let chosen = availableMiddles[0];
-                    schedule[day][chosen].push(task);
-                    taskCounts[chosen][task]++;
-                });
-
-                // Assign Support to middles with no tasks today
-                availableMiddles.forEach(m => {
-                    if (schedule[day][m].length === 0) {
-                        schedule[day][m].push("Support");
-                        taskCounts[m]["Support"]++;
-                    }
-                });
-            }
+                }
+            });
         });
 
         // 4. Render results
-        renderPlanning(schedule, offDays);
+        renderPlanning(schedule, offSlots);
     }
 
-    function renderPlanning(schedule, offDays) {
+    function renderPlanning(schedule, offSlots) {
         const tbody = document.getElementById("resultTbody");
         tbody.innerHTML = ""; // clear
 
-        // Render Seniors
-        let trS = document.createElement("tr");
-        trS.innerHTML = `<td colspan="7" class="role-header">Seniors</td>`;
-        tbody.appendChild(trS);
+        days.forEach(day => {
+            periods.forEach((period, pIndex) => {
+                let pid = getPeriodId(day, period);
+                let tr = document.createElement("tr");
+                let html = "";
 
-        seniors.forEach(person => {
-            let tr = document.createElement("tr");
-            let html = `<td><strong>${person}</strong></td>`;
-            days.forEach(day => {
-                if (offDays[person].includes(day)) {
-                    html += `<td class="off-cell">OFF</td>`;
-                } else {
-                    let tasks = schedule[day][person];
-                    if (tasks.length === 0) {
-                        html += `<td>-</td>`;
-                    } else {
-                        let badges = tasks.map(t => `<span class="task-tag ${getTaskClass(t)}">${t}</span>`).join(" ");
-                        html += `<td>${badges}</td>`;
-                    }
+                if (pIndex === 0) {
+                    html += `<td rowspan="2" class="day-header">${day}</td>`;
                 }
-            });
-            tr.innerHTML = html;
-            tbody.appendChild(tr);
-        });
+                html += `<td>${period}</td>`;
 
-        // Render Middles
-        let trM = document.createElement("tr");
-        trM.innerHTML = `<td colspan="7" class="role-header">Middles</td>`;
-        tbody.appendChild(trM);
-
-        middles.forEach(person => {
-            let tr = document.createElement("tr");
-            let html = `<td><strong>${person}</strong></td>`;
-            days.forEach(day => {
-                if (offDays[person].includes(day)) {
-                    html += `<td class="off-cell">OFF</td>`;
-                } else {
-                    let tasks = schedule[day][person];
-                    if (tasks.length === 0) {
-                        html += `<td>-</td>`;
+                allMembers.forEach(person => {
+                    if (offSlots[person].includes(pid)) {
+                        html += `<td class="off-cell">OFF</td>`;
                     } else {
-                        let badges = tasks.map(t => `<span class="task-tag ${getTaskClass(t)}">${t}</span>`).join(" ");
-                        html += `<td>${badges}</td>`;
+                        let tasks = schedule[pid][person];
+                        if (tasks.length === 0) {
+                            html += `<td>-</td>`;
+                        } else {
+                            let badges = tasks.map(t => `<span class="task-tag ${getTaskClass(t)}">${t}</span>`).join(" ");
+                            html += `<td>${badges}</td>`;
+                        }
                     }
-                }
+                });
+
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
             });
-            tr.innerHTML = html;
-            tbody.appendChild(tr);
         });
 
         // Show result section
@@ -323,20 +309,20 @@
         // Add BOM for Excel compatibility with French accents
         let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
 
+        let previousDay = ""; // Track rowspan logic for day column
+
         rows.forEach(function(row) {
             let rowData = [];
-
-            // Skip role headers for data cleanliness
-            if (row.querySelector(".role-header")) return;
-
             let cells = row.querySelectorAll("th, td");
 
-            cells.forEach((cell, index) => {
+            // Handle table headers which might have rowspans/colspans
+            let isHeader = row.parentElement.tagName === "THEAD";
+
+            cells.forEach(cell => {
                 let text = "";
                 if (cell.classList.contains("off-cell")) {
                     text = "OFF";
                 } else {
-                    // Extract text from spans if any, else normal text
                     let tags = cell.querySelectorAll(".task-tag");
                     if (tags.length > 0) {
                         let t = [];
@@ -346,7 +332,21 @@
                         text = cell.innerText.trim();
                     }
                 }
-                rowData.push('"' + text.replace(/"/g, '""') + '"');
+
+                // For body rows, if there's no Day cell, we push the previous day
+                if (!isHeader && cell === cells[0] && !cell.hasAttribute("rowspan")) {
+                    rowData.push('"' + previousDay.replace(/"/g, '""') + '"');
+                }
+                if (!isHeader && cell.hasAttribute("rowspan")) {
+                    previousDay = text;
+                }
+
+                // For headers, if it has colspan, duplicate it to keep CSV columns aligned
+                let colSpan = cell.getAttribute("colspan") ? parseInt(cell.getAttribute("colspan")) : 1;
+
+                for(let i=0; i<colSpan; i++) {
+                    rowData.push('"' + text.replace(/"/g, '""') + '"');
+                }
             });
             csvContent += rowData.join(";") + "\r\n";
         });
@@ -354,8 +354,8 @@
         let encodedUri = encodeURI(csvContent);
         let link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "planning_equipe.csv");
-        document.body.appendChild(link); // Required for FF
+        link.setAttribute("download", "planning_equipe_demi_journees.csv");
+        document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     }
