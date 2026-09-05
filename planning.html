@@ -52,7 +52,7 @@
     .task-pricing { background-color: #8e44ad; }
     .task-out-pf-middle { background-color: #d35400; }
     .task-on-pf { background-color: #16a085; }
-    .task-support { background-color: #7f8c8d; }
+
 
     #planningResult { display: none; }
 </style>
@@ -187,7 +187,7 @@
         let taskCounts = {};
         allMembers.forEach(p => {
             taskCounts[p] = {};
-            [...seniorTasks, ...middleTasks, "Support"].forEach(t => taskCounts[p][t] = 0);
+            [...seniorTasks, ...middleTasks].forEach(t => taskCounts[p][t] = 0);
         });
 
         let schedule = {}; // schedule[pid][person] = [tasks]
@@ -246,11 +246,11 @@
                         taskCounts[chosen][task]++;
                     });
 
-                    // Assign Support to middles with no tasks this slot
+                    // Assign Pricing as fallback to middles with no tasks this slot
                     availableMiddles.forEach(m => {
                         if (schedule[pid][m].length === 0) {
-                            schedule[pid][m].push("Support");
-                            taskCounts[m]["Support"]++;
+                            schedule[pid][m].push("Pricing");
+                            taskCounts[m]["Pricing"]++;
                         }
                     });
                 }
